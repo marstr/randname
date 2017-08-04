@@ -5,5 +5,6 @@ go:
   - 1.8
 
 script:
-  - go test
-  - perl ./helloworld.pl
+  - cat ./adjectives.txt | perl ./isAlphabetized.pl
+  - cat ./nouns.txt | perl ./isAlphabetized.pl
+  - go test -v ./...
