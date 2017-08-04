@@ -6,6 +6,7 @@ go:
 
 install:
   - go get -u github.com/golang/lint/golint
+  - go get -u github.com/marstr/collection
 
 script:
   - cat ./adjectives.txt | perl ./isAlphabetized.pl
