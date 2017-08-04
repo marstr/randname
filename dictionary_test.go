@@ -27,7 +27,6 @@ func ExampleDictionary_Add() {
 func ExampleDictionary_Enumerate() {
 	subject := Dictionary{}
 	subject.Add("hello")
-	subject.Add("world")
 
 	upperCase := collection.Select(subject, func(x interface{}) interface{} {
 		return strings.ToUpper(x.(string))
@@ -42,9 +41,7 @@ func ExampleDictionary_Enumerate() {
 	}
 	// Output:
 	// hello
-	// world
 	// HELLO
-	// WORLD
 }
 
 func TestDictionary_Add(t *testing.T) {
