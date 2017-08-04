@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"path"
+	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/marstr/collection"
 )
@@ -30,6 +34,38 @@ func NewAdjNoun() *AdjNoun {
 	}
 }
 
+var getDefaultAdjectives = func() func() *Dictionary {
+	var loader sync.Once
+	defaultAdjectives := &Dictionary{}
+	return func() *Dictionary {
+		loader.Do(func() {
+			_, adjFile, _, _ := runtime.Caller(0)
+			adjFile = path.Join(filepath.Dir(adjFile), "adjectives.txt")
+			reader := FileDictionaryBuilder{
+				Target: adjFile,
+			}
+			reader.Build(defaultAdjectives)
+		})
+		return defaultAdjectives
+	}
+}()
+
+var getDefaultNouns = func() func() *Dictionary {
+	var loader sync.Once
+	defaultNouns := &Dictionary{}
+	return func() *Dictionary {
+		loader.Do(func() {
+			_, nounFile, _, _ := runtime.Caller(0)
+			nounFile = path.Join(filepath.Dir(nounFile), "nouns.txt")
+			reader := FileDictionaryBuilder{
+				Target: nounFile,
+			}
+			reader.Build(defaultNouns)
+		})
+		return defaultNouns
+	}
+}()
+
 // Generate creates a new randomly generated name with the
 func (adNoun AdjNoun) Generate() string {
 	if adNoun.Format == nil {
@@ -39,13 +75,31 @@ func (adNoun AdjNoun) Generate() string {
 }
 
 func (adNoun AdjNoun) getAdjective() string {
-	randomLocation := uint(adNoun.Adjectives.Size())
-	return collection.ElementAt(adNoun.Adjectives, randomLocation).(string)
+	if adNoun.Adjectives == nil {
+		adNoun.Adjectives = getDefaultAdjectives()
+	}
+	if collection.Any(adNoun.Adjectives) {
+		if adNoun.RandGenerator == nil {
+			adNoun.RandGenerator = rand.Reader
+		}
+		randomLocation, _ := rand.Int(adNoun.RandGenerator, big.NewInt(adNoun.Adjectives.Size()))
+		return collection.ElementAt(adNoun.Adjectives, uint(randomLocation.Uint64())).(string)
+	}
+	return ""
 }
 
 func (adNoun AdjNoun) getNoun() string {
-	position, _ := rand.Int(adNoun.RandGenerator, big.NewInt(adNoun.Nouns.Size()))
-	return collection.ElementAt(adNoun.Nouns, uint(position.Uint64())).(string)
+	if adNoun.Nouns == nil {
+		adNoun.Nouns = getDefaultNouns()
+	}
+	if collection.Any(adNoun.Nouns) {
+		if adNoun.RandGenerator == nil {
+			adNoun.RandGenerator = rand.Reader
+		}
+		position, _ := rand.Int(adNoun.RandGenerator, big.NewInt(adNoun.Nouns.Size()))
+		return collection.ElementAt(adNoun.Nouns, uint(position.Uint64())).(string)
+	}
+	return ""
 }
 
 func (adNoun AdjNoun) getDigit() int {
@@ -65,11 +119,16 @@ func GenerateCamelCaseAdjNoun(adjective, noun string, digit int) string {
 // GeneratePascalCaseAdjNoun formats an adjective, noun, and digit in the following way: BigCloud9
 func GeneratePascalCaseAdjNoun(adjective, noun string, digit int) string {
 	builder := bytes.Buffer{}
+	if len(adjective) > 0 {
+		builder.WriteString(strings.ToUpper(adjective[:1]))
+		builder.WriteString(strings.ToLower(adjective[1:]))
+	}
 
-	builder.WriteString(strings.ToUpper(adjective[:1]))
-	builder.WriteString(strings.ToLower(adjective[1:]))
-	builder.WriteString(strings.ToUpper(noun[:1]))
-	builder.WriteString(strings.ToLower(noun[1:]))
+	if len(noun) > 0 {
+		builder.WriteString(strings.ToUpper(noun[:1]))
+		builder.WriteString(strings.ToLower(noun[1:]))
+	}
+
 	builder.WriteString(fmt.Sprintf("%02d", digit))
 
 	return builder.String()

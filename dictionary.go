@@ -69,6 +69,11 @@ type Dictionary struct {
 	size int64
 }
 
+// DictionaryBuilder allows a mi
+type DictionaryBuilder interface {
+	Build(*Dictionary) error
+}
+
 // Add inserts a word into the dictionary, and returns whether or not that word was a new word.
 func (dict *Dictionary) Add(word string) (wasAdded bool) {
 	if dict.root == nil {
@@ -98,6 +103,12 @@ func (dict *Dictionary) Add(word string) (wasAdded bool) {
 	}
 	cursor.IsWord = true
 	return
+}
+
+// Clear removes all items from the dictionary
+func (dict *Dictionary) Clear() {
+	dict.root = nil
+	dict.size = 0
 }
 
 // Contains searches the Dictiionary to see if the specifed word is present.
@@ -144,5 +155,8 @@ func (dict Dictionary) Size() int64 {
 
 // Enumerate lists each word in the Dictionary
 func (dict Dictionary) Enumerate(cancel <-chan struct{}) collection.Enumerator {
+	if dict.root == nil {
+		return collection.Empty.Enumerate(cancel)
+	}
 	return dict.root.Enumerate(cancel)
 }
