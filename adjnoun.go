@@ -137,10 +137,13 @@ func GeneratePascalCaseAdjNoun(adjective, noun string, digit int) string {
 // GenerateHyphenedAdjNoun formats an adjective, noun, and digit in the following way: big-cloud-9
 func GenerateHyphenedAdjNoun(adjective, noun string, digit int) string {
 	builder := bytes.Buffer{}
-
-	builder.WriteString(strings.ToLower(adjective))
+	if len(adjective) > 0 {
+		builder.WriteString(strings.ToLower(adjective))
+	}
 	builder.WriteRune('-')
-	builder.WriteString(strings.ToLower(noun))
+	if len(adjective) > 0 {
+		builder.WriteString(strings.ToLower(noun))
+	}
 	builder.WriteRune('-')
 	builder.WriteString(fmt.Sprintf("%02d", digit))
 
