@@ -4,7 +4,11 @@ go:
   - 1.7
   - 1.8
 
+install:
+  - go get -u github.com/golang/lint/golint
+
 script:
   - cat ./adjectives.txt | perl ./isAlphabetized.pl
   - cat ./nouns.txt | perl ./isAlphabetized.pl
   - go test -v ./...
+  - golint ./...
