@@ -34,37 +34,24 @@ func NewAdjNoun() *AdjNoun {
 	}
 }
 
-var getDefaultAdjectives = func() func() *Dictionary {
+func defaultBuilder(subPath string) func() *Dictionary {
 	var loader sync.Once
-	defaultAdjectives := &Dictionary{}
+	defaultDictionary := &Dictionary{}
 	return func() *Dictionary {
 		loader.Do(func() {
-			_, adjFile, _, _ := runtime.Caller(0)
-			adjFile = path.Join(filepath.Dir(adjFile), "adjectives.txt")
+			_, targetFile, _, _ := runtime.Caller(0)
+			targetFile = path.Join(filepath.Dir(targetFile), subPath)
 			reader := FileDictionaryBuilder{
-				Target: adjFile,
+				Target: targetFile,
 			}
-			reader.Build(defaultAdjectives)
+			reader.Build(defaultDictionary)
 		})
-		return defaultAdjectives
+		return defaultDictionary
 	}
-}()
+}
 
-var getDefaultNouns = func() func() *Dictionary {
-	var loader sync.Once
-	defaultNouns := &Dictionary{}
-	return func() *Dictionary {
-		loader.Do(func() {
-			_, nounFile, _, _ := runtime.Caller(0)
-			nounFile = path.Join(filepath.Dir(nounFile), "nouns.txt")
-			reader := FileDictionaryBuilder{
-				Target: nounFile,
-			}
-			reader.Build(defaultNouns)
-		})
-		return defaultNouns
-	}
-}()
+var getDefaultAdjectives = defaultBuilder("adjectives.txt")
+var getDefaultNouns = defaultBuilder("nouns.txt")
 
 // Generate creates a new randomly generated name with the
 func (adNoun AdjNoun) Generate() string {
