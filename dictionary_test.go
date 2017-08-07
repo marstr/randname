@@ -44,6 +44,61 @@ func ExampleDictionary_Enumerate() {
 	// HELLO
 }
 
+func TestDictionary_Enumerate(t *testing.T) {
+	dictSets := [][]string{
+		{"alpha", "beta", "charlie"},
+		{"also", "always"},
+		{"canned", "beans"},
+		{"duplicated", "duplicated", "after"},
+	}
+
+	for _, ds := range dictSets {
+		t.Run("", func(t *testing.T) {
+			subject := Dictionary{}
+			expected := make(map[string]bool)
+			added := 0
+			for _, entry := range ds {
+				if subject.Add(entry) {
+					added++
+				}
+				expected[entry] = false
+			}
+
+			expectedSize := len(expected)
+
+			if added != expectedSize {
+				t.Logf("`Add` returned true %d times, expected %d times", added, expectedSize)
+				t.Fail()
+			}
+
+			if subjectSize := collection.CountAll(subject); subjectSize != expectedSize {
+				t.Logf("`collection.CountAll` returned %d elements, expected %d", subjectSize, expectedSize)
+				t.Fail()
+			}
+
+			prev := ""
+			for result := range subject.Enumerate(nil) {
+				t.Logf(result.(string))
+				if alreadySeen, ok := expected[result.(string)]; !ok {
+					t.Logf("An unadded value was returned")
+					t.Fail()
+				} else if alreadySeen {
+					t.Logf("\"%s\" was duplicated", result.(string))
+					t.Fail()
+				}
+
+				if stringle(result.(string), prev) {
+					t.Logf("Results \"%s\" and \"%s\" were not alphabetized.", prev, result.(string))
+					t.Fail()
+				}
+				prev = result.(string)
+
+				expected[result.(string)] = true
+			}
+		})
+	}
+}
+
 func TestDictionary_Add(t *testing.T) {
 	subject := Dictionary{}
 
@@ -105,4 +160,14 @@ func TestTrieNode_Navigate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func stringle(left, right string) bool {
+	other := []byte(right)
+	for i, letter := range []byte(left) {
+		if i >= len(other) || letter > other[i] {
+			return false
+		}
+	}
+	return true
 }

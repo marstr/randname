@@ -1,6 +1,8 @@
 package randname
 
 import (
+	"sort"
+
 	"github.com/marstr/collection"
 )
 
@@ -50,8 +52,16 @@ func (node trieNode) Enumerate(cancel <-chan struct{}) collection.Enumerator {
 			}
 		}
 
-		for letter, child := range subject.Children {
-			enumerateHelper(*child, prefix+string(letter))
+		alphabetizedChildren := []rune{}
+		for letter := range subject.Children {
+			alphabetizedChildren = append(alphabetizedChildren, letter)
+		}
+		sort.Slice(alphabetizedChildren, func(i, j int) bool {
+			return alphabetizedChildren[i] < alphabetizedChildren[j]
+		})
+
+		for _, letter := range alphabetizedChildren {
+			enumerateHelper(*subject.Children[letter], prefix+string(letter))
 		}
 	}
 

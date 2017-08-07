@@ -8,7 +8,7 @@ import (
 var pascalForm = regexp.MustCompile(`^[A-Z][a-z]+[A-Z][a-z]+\d{2}$`)
 var camelForm = regexp.MustCompile(`^[a-z]+[A-Z][a-z]+\d{2}$`)
 
-func TestAdjNound_Generate(t *testing.T) {
+func TestAdjNoun_Generate(t *testing.T) {
 	testCases := []struct {
 		Format   AdjNounFormat
 		Expected *regexp.Regexp
@@ -28,5 +28,15 @@ func TestAdjNound_Generate(t *testing.T) {
 				t.Fail()
 			}
 		})
+	}
+}
+
+func BenchmarkAdjNoun_Generate(b *testing.B) {
+	subject := &AdjNoun{}
+	subject.Generate() // Prime the pump to separate default Dictionary population time.
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		subject.Generate()
 	}
 }
