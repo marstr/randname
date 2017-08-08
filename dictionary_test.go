@@ -2,6 +2,8 @@ package randname
 
 import (
 	"fmt"
+	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -45,6 +47,30 @@ func ExampleDictionary_Enumerate() {
 }
 
 func TestDictionary_Enumerate(t *testing.T) {
+
+	gover := runtime.Version()
+	verPattern := regexp.MustCompile(`go(?P<major>\d)+\.(?P<minor>\d+)`)
+
+	verMatch := verPattern.FindStringSubmatch(gover)
+
+	var expectAlphabetized bool
+	var major, minor int
+
+	if len(verMatch) > 2 {
+		fmt.Sscan(verMatch[1], &major)
+		fmt.Sscan(verMatch[2], &minor)
+
+		if major >= 1 && minor >= 8 {
+			expectAlphabetized = true
+		}
+	}
+
+	if expectAlphabetized {
+		t.Logf("Detected Go Version: %s, keeping alphabetization check.", gover)
+	} else {
+		t.Logf("Detected Go Version: %s, turning off alphabetization check.", gover)
+	}
+
 	dictSets := [][]string{
 		{"alpha", "beta", "charlie"},
 		{"also", "always"},
@@ -87,7 +113,7 @@ func TestDictionary_Enumerate(t *testing.T) {
 					t.Fail()
 				}
 
-				if stringle(result.(string), prev) {
+				if expectAlphabetized && stringle(result.(string), prev) {
 					t.Logf("Results \"%s\" and \"%s\" were not alphabetized.", prev, result.(string))
 					t.Fail()
 				}
