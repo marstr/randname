@@ -162,11 +162,45 @@ func TestTrieNode_Navigate(t *testing.T) {
 	}
 }
 
+func Test_stringle(t *testing.T) {
+	testCases := []struct {
+		left     string
+		right    string
+		expected bool
+	}{
+		{"a", "b", true},
+		{"b", "a", false},
+		{"a", "a", true},
+		{"alpha", "b", true},
+		{"a", "beta", true},
+		{"alpha", "alpha", true},
+		{"alpha", "alphabet", true},
+		{"alphabet", "alpha", false},
+		{"", "a", true},
+		{"", "", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(strings.Join([]string{tc.left, tc.right}, ","), func(t *testing.T) {
+			if got := stringle(tc.left, tc.right); got != tc.expected {
+				t.Logf("got: %v want: %v", got, tc.expected)
+				t.Fail()
+			}
+		})
+	}
+}
+
 func stringle(left, right string) bool {
 	other := []byte(right)
 	for i, letter := range []byte(left) {
-		if i >= len(other) || letter > other[i] {
+		if i >= len(other) {
 			return false
+		}
+
+		if letter > other[i] {
+			return false
+		} else if letter < other[i] {
+			break
 		}
 	}
 	return true
