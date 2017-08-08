@@ -28,6 +28,27 @@ func ExampleDictionary_Add() {
 	// 1
 }
 
+func ExampleDictionary_Clear() {
+	subject := &Dictionary{}
+
+	subject.Add("hello")
+	subject.Add("world")
+
+	fmt.Println(subject.Size())
+	fmt.Println(collection.CountAll(subject))
+
+	subject.Clear()
+
+	fmt.Println(subject.Size())
+	fmt.Println(collection.Any(subject))
+
+	// Output:
+	// 2
+	// 2
+	// 0
+	// false
+}
+
 func ExampleDictionary_Enumerate() {
 	subject := Dictionary{}
 	subject.Add("hello")
@@ -46,6 +67,29 @@ func ExampleDictionary_Enumerate() {
 	// Output:
 	// hello
 	// HELLO
+}
+
+func ExampleDictionary_Remove() {
+	const world = "world"
+	subject := Dictionary{}
+	subject.Add("hello")
+	subject.Add(world)
+
+	fmt.Println(subject.Size())
+	fmt.Println(collection.CountAll(subject))
+
+	subject.Remove(world)
+
+	fmt.Println(subject.Size())
+	fmt.Println(collection.CountAll(subject))
+	fmt.Println(collection.Any(subject))
+
+	// Output:
+	// 2
+	// 2
+	// 1
+	// 1
+	// true
 }
 
 func TestDictionary_Enumerate(t *testing.T) {
