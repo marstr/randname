@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"os"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -35,12 +36,26 @@ func NewAdjNoun() *AdjNoun {
 }
 
 func defaultBuilder(subPath string) func() *Dictionary {
+	_, callerFile, _, _ := runtime.Caller(0)
+
+	// try to be as flexible as possible about how folks have included this library and still have default libraries populated.
+	searchLocations := []string{
+		subPath,
+		path.Base(subPath),
+		path.Join(filepath.Dir(callerFile), subPath),
+	}
+
 	var loader sync.Once
 	defaultDictionary := &Dictionary{}
 	return func() *Dictionary {
 		loader.Do(func() {
-			_, targetFile, _, _ := runtime.Caller(0)
-			targetFile = path.Join(filepath.Dir(targetFile), subPath)
+			var targetFile string
+			for _, loc := range searchLocations {
+				if _, err := os.Stat(loc); err == nil {
+					targetFile = loc
+					break
+				}
+			}
 			reader := FileDictionaryBuilder{
 				Target: targetFile,
 			}
