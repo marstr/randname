@@ -60,3 +60,8 @@ func (p Prefixed) Generate() string {
 	}
 	return builder.String()
 }
+
+// GenerateWithPrefix generates a string with a given prefix then a given number of randomly selected characters.
+func GenerateWithPrefix(prefix string, characters uint8) string {
+	return Prefixed{Prefix: prefix, Len: characters}.Generate()
+}

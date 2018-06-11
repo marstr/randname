@@ -27,6 +27,12 @@ func ExamplePrefixed() {
 	}
 }
 
+func ExampleGenerateWithPrefix() {
+	for i := 0; i < 10; i++ {
+		fmt.Println(randname.GenerateWithPrefix("randname-", 10))
+	}
+}
+
 func TestPrefixed_Generate_NoRepeats(t *testing.T) {
 	const trials = 100
 
