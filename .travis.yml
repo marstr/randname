@@ -5,6 +5,9 @@ go:
   - 1.x
   - master
 
+env:
+  - GO111MODULE=on
+
 matrix:
   fast_finish: true
   allow_failures:
