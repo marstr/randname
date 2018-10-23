@@ -5,12 +5,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/marstr/collection"
 )
 
 func BenchmarkFileDictionaryBuilder_BuildAdjectives(b *testing.B) {
 	_, adjFile, _, _ := runtime.Caller(0)
 	adjFile = path.Join(filepath.Dir(adjFile), "adjectives.txt")
-	recipient := Dictionary{}
+	recipient := collection.Dictionary{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		reader := FileDictionaryBuilder{}
@@ -24,7 +26,7 @@ func BenchmarkFileDictionaryBuilder_BuildAdjectives(b *testing.B) {
 func BenchmarkFileDictionaryBuilder_BuildNouns(b *testing.B) {
 	_, nounFile, _, _ := runtime.Caller(0)
 	nounFile = path.Join(filepath.Dir(nounFile), "nouns.txt")
-	recipient := Dictionary{}
+	recipient := collection.Dictionary{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		reader := FileDictionaryBuilder{}

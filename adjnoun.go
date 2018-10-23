@@ -21,9 +21,9 @@ type AdjNounFormat func(string, string, int) string
 
 // AdjNoun creates a random name of the form adjectiveNameDigit
 type AdjNoun struct {
-	Adjectives    *Dictionary
+	Adjectives    *collection.Dictionary
 	Format        AdjNounFormat
-	Nouns         *Dictionary
+	Nouns         *collection.Dictionary
 	RandGenerator io.Reader
 }
 
@@ -35,7 +35,7 @@ func NewAdjNoun() *AdjNoun {
 	}
 }
 
-func defaultBuilder(subPath string) func() *Dictionary {
+func defaultBuilder(subPath string) func() *collection.Dictionary {
 	_, callerFile, _, _ := runtime.Caller(0)
 
 	// try to be as flexible as possible about how folks have included this library and still have default libraries populated.
@@ -46,8 +46,8 @@ func defaultBuilder(subPath string) func() *Dictionary {
 	}
 
 	var loader sync.Once
-	defaultDictionary := &Dictionary{}
-	return func() *Dictionary {
+	defaultDictionary := &collection.Dictionary{}
+	return func() *collection.Dictionary {
 		loader.Do(func() {
 			var targetFile string
 			for _, loc := range searchLocations {

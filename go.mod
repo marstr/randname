@@ -1,3 +1,3 @@
 module github.com/marstr/randname
 
-require github.com/marstr/collection v0.3.3
+require github.com/marstr/collection v1.0.1

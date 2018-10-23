@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/marstr/collection"
 )
 
 // FileDictionaryBuilder read words from a file.
@@ -12,7 +14,7 @@ type FileDictionaryBuilder struct {
 }
 
 // Build walks a simple newline delimited file of words and populates a dictionary with them.
-func (fdb FileDictionaryBuilder) Build(dict *Dictionary) (err error) {
+func (fdb FileDictionaryBuilder) Build(dict *collection.Dictionary) (err error) {
 	var handle *os.File
 	handle, err = os.Open(fdb.Target)
 
