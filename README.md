@@ -1,6 +1,5 @@
 # randname
-
-[![Build Status](https://travis-ci.org/marstr/randname.svg?branch=master)](https://travis-ci.org/marstr/randname)
+[![Build Status](https://mstrobel.visualstudio.com/randname/_apis/build/status/randname-Go%20(preview)-CI)](https://mstrobel.visualstudio.com/randname/_build/latest?definitionId=5)
 
 A Go package which creates random names with an emphasis on flexibility and ease of use.
 
