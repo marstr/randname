@@ -107,6 +107,9 @@ phases:
       - bash: 'cat nouns.txt | perl isAlphabetized.pl'
         displayName: 'Nouns Alphabetized'
 
+      - bash: 'test -z "hello world!!!"'
+        displayName: 'deliberately fail for the sake of experimentation'
+
       - task: GoTool@0
         displayName: 'Use Go 1.11'
         inputs:
