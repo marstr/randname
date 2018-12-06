@@ -68,7 +68,7 @@ func defaultBuilder(subPath string) func() *collection.Dictionary {
 var getDefaultAdjectives = defaultBuilder("adjectives.txt")
 var getDefaultNouns = defaultBuilder("nouns.txt")
 
-// Generate fetches a random name of the default format and strategy.
+// generate fetches a random name of the default format and strategy.
 func Generate() string {
 	return AdjNoun{}.Generate()
 }
