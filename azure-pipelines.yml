@@ -12,9 +12,9 @@ phases:
 
     steps:
       - task: GoTool@0
-        displayName: 'Use Go 1.11'
+        displayName: 'Use Go 1.16'
         inputs:
-          version: 1.11
+          version: 1.16
 
 
       - task: Go@0
@@ -43,9 +43,9 @@ phases:
 
     steps:
       - task: GoTool@0
-        displayName: 'Use Go 1.11'
+        displayName: 'Use Go 1.16'
         inputs:
-          version: 1.11
+          version: 1.16
 
 
       - task: Go@0
@@ -72,9 +72,9 @@ phases:
       name: Hosted
     steps:
       - task: GoTool@0
-        displayName: 'Use Go 1.11'
+        displayName: 'Use Go 1.16'
         inputs:
-          version: 1.11
+          version: 1.16
 
 
       - task: Go@0
@@ -108,9 +108,9 @@ phases:
         displayName: 'Nouns Alphabetized'
 
       - task: GoTool@0
-        displayName: 'Use Go 1.11'
+        displayName: 'Use Go 1.16'
         inputs:
-          version: 1.11
+          version: 1.16
 
 
       - bash: 'go get -u golang.org/x/lint/golint'
@@ -127,5 +127,4 @@ phases:
           customCommand: vet
 
           arguments: ./...
-
 
