@@ -3,13 +3,10 @@ package randname
 import (
 	"bytes"
 	"crypto/rand"
+	_ "embed"
 	"fmt"
 	"io"
 	"math/big"
-	"os"
-	"path"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -35,38 +32,33 @@ func NewAdjNoun() *AdjNoun {
 	}
 }
 
-func defaultBuilder(subPath string) func() *collection.Dictionary {
-	_, callerFile, _, _ := runtime.Caller(0)
-
-	// try to be as flexible as possible about how folks have included this library and still have default libraries populated.
-	searchLocations := []string{
-		subPath,
-		path.Base(subPath),
-		path.Join(filepath.Dir(callerFile), subPath),
-	}
-
+func defaultBuilder(words *string) func() *collection.Dictionary {
 	var loader sync.Once
 	defaultDictionary := &collection.Dictionary{}
 	return func() *collection.Dictionary {
 		loader.Do(func() {
-			var targetFile string
-			for _, loc := range searchLocations {
-				if _, err := os.Stat(loc); err == nil {
-					targetFile = loc
+			reader := strings.NewReader(*words)
+			var word string
+			for {
+				if _, err := fmt.Fscanln(reader, &word); err != nil {
 					break
 				}
+				defaultDictionary.Add(word)
 			}
-			reader := FileDictionaryBuilder{
-				Target: targetFile,
-			}
-			reader.Build(defaultDictionary)
+			*words = ""
 		})
 		return defaultDictionary
 	}
 }
 
-var getDefaultAdjectives = defaultBuilder("adjectives.txt")
-var getDefaultNouns = defaultBuilder("nouns.txt")
+//go:embed adjectives.txt
+var defaultAdjectives string
+
+//go:embed nouns.txt
+var defaultNouns string
+
+var getDefaultAdjectives = defaultBuilder(&defaultAdjectives)
+var getDefaultNouns = defaultBuilder(&defaultNouns)
 
 // generate fetches a random name of the default format and strategy.
 func Generate() string {
