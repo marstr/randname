@@ -133,12 +133,39 @@ func TestDefaultDictionariesStandalone(t *testing.T) {
 	}
 }
 
+var benchmarkGeneratedName string
+
 func BenchmarkAdjNoun_Generate(b *testing.B) {
 	subject := &AdjNoun{}
 	subject.Generate() // Prime the pump to separate default Dictionary population time.
+	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		subject.Generate()
+		benchmarkGeneratedName = subject.Generate()
+	}
+}
+
+func BenchmarkGenerateCamelCaseAdjNoun(b *testing.B) {
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		benchmarkGeneratedName = GenerateCamelCaseAdjNoun("big", "cloud", 9)
+	}
+}
+
+func BenchmarkGeneratePascalCaseAdjNoun(b *testing.B) {
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		benchmarkGeneratedName = GeneratePascalCaseAdjNoun("big", "cloud", 9)
+	}
+}
+
+func BenchmarkGenerateHyphenedAdjNoun(b *testing.B) {
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		benchmarkGeneratedName = GenerateHyphenedAdjNoun("big", "cloud", 9)
 	}
 }
