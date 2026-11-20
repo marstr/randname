@@ -133,12 +133,79 @@ func TestDefaultDictionariesStandalone(t *testing.T) {
 	}
 }
 
+func TestGenerateAdjNounFormats(t *testing.T) {
+	tests := []struct {
+		name      string
+		adjective string
+		noun      string
+		digit     int
+		pascal    string
+		camel     string
+		hyphened  string
+	}{
+		{"lowercase", "big", "cloud", 9, "BigCloud09", "bigCloud09", "big-cloud-09"},
+		{"mixed_case", "bIG", "cLOUD", 42, "BigCloud42", "bigCloud42", "big-cloud-42"},
+		{"single_letters", "B", "C", 0, "BC00", "bC00", "b-c-00"},
+		{"empty_adjective", "", "cloud", 9, "Cloud09", "cloud09", "--09"},
+		{"empty_noun", "big", "", 9, "Big09", "big09", "big--09"},
+		{"empty_words", "", "", 9, "09", "09", "--09"},
+		{"negative_digit", "big", "cloud", -1, "BigCloud-1", "bigCloud-1", "big-cloud--1"},
+		{"wide_digit", "big", "cloud", 123, "BigCloud123", "bigCloud123", "big-cloud-123"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			formats := []struct {
+				name   string
+				format AdjNounFormat
+				want   string
+			}{
+				{"pascal", FormatPascalCaseAdjNoun, tt.pascal},
+				{"camel", FormatCamelCaseAdjNoun, tt.camel},
+				{"hyphened", FormatHyphenedAdjNoun, tt.hyphened},
+			}
+			for _, format := range formats {
+				t.Run(format.name, func(t *testing.T) {
+					if got := format.format(tt.adjective, tt.noun, tt.digit); got != format.want {
+						t.Errorf("got %q, want %q", got, format.want)
+					}
+				})
+			}
+		})
+	}
+}
+
 func BenchmarkAdjNoun_Generate(b *testing.B) {
 	subject := &AdjNoun{}
 	subject.Generate() // Prime the pump to separate default Dictionary population time.
+	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		subject.Generate()
+		_ = subject.Generate()
+	}
+}
+
+func BenchmarkFormatCamelCaseAdjNoun(b *testing.B) {
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_ = FormatCamelCaseAdjNoun("big", "cloud", 9)
+	}
+}
+
+func BenchmarkFormatPascalCaseAdjNoun(b *testing.B) {
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_ = FormatPascalCaseAdjNoun("big", "cloud", 9)
+	}
+}
+
+func BenchmarkFormatHyphenedAdjNoun(b *testing.B) {
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_ = FormatHyphenedAdjNoun("big", "cloud", 9)
 	}
 }
