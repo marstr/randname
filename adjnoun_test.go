@@ -263,9 +263,9 @@ func TestGenerateAdjNounFormats(t *testing.T) {
 		{"lowercase", "big", "cloud", 9, "BigCloud09", "bigCloud09", "big-cloud-09"},
 		{"mixed_case", "bIG", "cLOUD", 42, "BigCloud42", "bigCloud42", "big-cloud-42"},
 		{"single_letters", "B", "C", 0, "BC00", "bC00", "b-c-00"},
-		{"empty_adjective", "", "cloud", 9, "Cloud09", "cloud09", "--09"},
-		{"empty_noun", "big", "", 9, "Big09", "big09", "big--09"},
-		{"empty_words", "", "", 9, "09", "09", "--09"},
+		{"empty_adjective", "", "cloud", 9, "Cloud09", "cloud09", "cloud-09"},
+		{"empty_noun", "big", "", 9, "Big09", "big09", "big-09"},
+		{"empty_words", "", "", 9, "09", "09", "09"},
 		{"negative_digit", "big", "cloud", -1, "BigCloud-1", "bigCloud-1", "big-cloud--1"},
 		{"wide_digit", "big", "cloud", 123, "BigCloud123", "bigCloud123", "big-cloud-123"},
 	}
