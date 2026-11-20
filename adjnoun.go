@@ -174,8 +174,8 @@ func FormatHyphenedAdjNoun(adjective, noun string, digit int) string {
 	builder := bytes.Buffer{}
 	if len(adjective) > 0 {
 		builder.WriteString(strings.ToLower(adjective))
+		builder.WriteRune('-')
 	}
-	builder.WriteRune('-')
 	if len(noun) > 0 {
 		builder.WriteString(strings.ToLower(noun))
 		builder.WriteRune('-')
