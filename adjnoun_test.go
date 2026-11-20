@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/marstr/collection"
+	"github.com/marstr/collection/v2"
 )
 
 var pascalForm = regexp.MustCompile(`^[A-Z][a-z]+[A-Z][a-z]+\d{2}$`)

@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/marstr/collection"
+	"github.com/marstr/collection/v2"
 )
 
 func BenchmarkFileDictionaryBuilder_BuildAdjectives(b *testing.B) {
