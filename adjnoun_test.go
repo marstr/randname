@@ -23,8 +23,8 @@ func TestAdjNoun_Generate(t *testing.T) {
 		Format   AdjNounFormat
 		Expected *regexp.Regexp
 	}{
-		{GenerateCamelCaseAdjNoun, camelForm},
-		{GeneratePascalCaseAdjNoun, pascalForm},
+		{FormatCamelCaseAdjNoun, camelForm},
+		{FormatPascalCaseAdjNoun, pascalForm},
 	}
 
 	subject := AdjNoun{}

@@ -28,7 +28,7 @@ type AdjNoun struct {
 func NewAdjNoun() *AdjNoun {
 	return &AdjNoun{
 		RandGenerator: rand.Reader,
-		Format:        GeneratePascalCaseAdjNoun,
+		Format:        FormatPascalCaseAdjNoun,
 	}
 }
 
@@ -68,7 +68,7 @@ func Generate() string {
 // Generate creates a new randomly generated name with the
 func (adNoun AdjNoun) Generate() string {
 	if adNoun.Format == nil {
-		adNoun.Format = GeneratePascalCaseAdjNoun
+		adNoun.Format = FormatPascalCaseAdjNoun
 	}
 	return adNoun.Format(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
 }
@@ -109,14 +109,14 @@ func (adNoun AdjNoun) getDigit() int {
 	return int(result.Int64())
 }
 
-// GenerateCamelCaseAdjNoun formats an adjective, noun, and digit in the following way: bigCloud9
-func GenerateCamelCaseAdjNoun(adjective, noun string, digit int) string {
-	pascal := GeneratePascalCaseAdjNoun(adjective, noun, digit)
+// FormatCamelCaseAdjNoun formats an adjective, noun, and digit in the following way: bigCloud9
+func FormatCamelCaseAdjNoun(adjective, noun string, digit int) string {
+	pascal := FormatPascalCaseAdjNoun(adjective, noun, digit)
 	return strings.ToLower(pascal[:1]) + pascal[1:]
 }
 
-// GeneratePascalCaseAdjNoun formats an adjective, noun, and digit in the following way: BigCloud9
-func GeneratePascalCaseAdjNoun(adjective, noun string, digit int) string {
+// FormatPascalCaseAdjNoun formats an adjective, noun, and digit in the following way: BigCloud9
+func FormatPascalCaseAdjNoun(adjective, noun string, digit int) string {
 	builder := bytes.Buffer{}
 	if len(adjective) > 0 {
 		builder.WriteString(strings.ToUpper(adjective[:1]))
@@ -133,8 +133,8 @@ func GeneratePascalCaseAdjNoun(adjective, noun string, digit int) string {
 	return builder.String()
 }
 
-// GenerateHyphenedAdjNoun formats an adjective, noun, and digit in the following way: big-cloud-9
-func GenerateHyphenedAdjNoun(adjective, noun string, digit int) string {
+// FormatHyphenedAdjNoun formats an adjective, noun, and digit in the following way: big-cloud-9
+func FormatHyphenedAdjNoun(adjective, noun string, digit int) string {
 	builder := bytes.Buffer{}
 	if len(adjective) > 0 {
 		builder.WriteString(strings.ToLower(adjective))
