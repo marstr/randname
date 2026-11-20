@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/marstr/collection"
+	"github.com/marstr/collection/v2"
 )
 
 // FileDictionaryBuilder read words from a file.

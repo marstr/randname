@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/marstr/collection"
+	"github.com/marstr/collection/v2"
 )
 
 // AdjNounFormat is a type of function that aggregates an Adjective, Noun, and Digit into a single formatted string.
@@ -113,12 +113,12 @@ func (adNoun AdjNoun) getAdjective() string {
 	if adNoun.Adjectives == nil {
 		adNoun.Adjectives = getDefaultAdjectives()
 	}
-	if collection.Any(adNoun.Adjectives) {
+	if collection.Any[string](adNoun.Adjectives) {
 		if adNoun.RandGenerator == nil {
 			adNoun.RandGenerator = defaultRandGenerator
 		}
 		randomLocation, _ := rand.Int(adNoun.RandGenerator, big.NewInt(adNoun.Adjectives.Size()))
-		return collection.ElementAt(adNoun.Adjectives, uint(randomLocation.Uint64())).(string)
+		return collection.ElementAt[string](adNoun.Adjectives, uint(randomLocation.Uint64()))
 	}
 	return ""
 }
@@ -127,12 +127,12 @@ func (adNoun AdjNoun) getNoun() string {
 	if adNoun.Nouns == nil {
 		adNoun.Nouns = getDefaultNouns()
 	}
-	if collection.Any(adNoun.Nouns) {
+	if collection.Any[string](adNoun.Nouns) {
 		if adNoun.RandGenerator == nil {
 			adNoun.RandGenerator = defaultRandGenerator
 		}
 		position, _ := rand.Int(adNoun.RandGenerator, big.NewInt(adNoun.Nouns.Size()))
-		return collection.ElementAt(adNoun.Nouns, uint(position.Uint64())).(string)
+		return collection.ElementAt[string](adNoun.Nouns, uint(position.Uint64()))
 	}
 	return ""
 }
