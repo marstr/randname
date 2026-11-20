@@ -23,8 +23,8 @@ func TestAdjNoun_Generate(t *testing.T) {
 		Format   AdjNounFormat
 		Expected *regexp.Regexp
 	}{
-		{GenerateCamelCaseAdjNoun, camelForm},
-		{GeneratePascalCaseAdjNoun, pascalForm},
+		{FormatCamelCaseAdjNoun, camelForm},
+		{FormatPascalCaseAdjNoun, pascalForm},
 	}
 
 	subject := AdjNoun{}
@@ -160,9 +160,9 @@ func TestGenerateAdjNounFormats(t *testing.T) {
 				format AdjNounFormat
 				want   string
 			}{
-				{"pascal", GeneratePascalCaseAdjNoun, tt.pascal},
-				{"camel", GenerateCamelCaseAdjNoun, tt.camel},
-				{"hyphened", GenerateHyphenedAdjNoun, tt.hyphened},
+				{"pascal", FormatPascalCaseAdjNoun, tt.pascal},
+				{"camel", FormatCamelCaseAdjNoun, tt.camel},
+				{"hyphened", FormatHyphenedAdjNoun, tt.hyphened},
 			}
 			for _, format := range formats {
 				t.Run(format.name, func(t *testing.T) {
@@ -188,26 +188,26 @@ func BenchmarkAdjNoun_Generate(b *testing.B) {
 	}
 }
 
-func BenchmarkGenerateCamelCaseAdjNoun(b *testing.B) {
+func BenchmarkFormatCamelCaseAdjNoun(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		benchmarkGeneratedName = GenerateCamelCaseAdjNoun("big", "cloud", 9)
+		benchmarkGeneratedName = FormatCamelCaseAdjNoun("big", "cloud", 9)
 	}
 }
 
-func BenchmarkGeneratePascalCaseAdjNoun(b *testing.B) {
+func BenchmarkFormatPascalCaseAdjNoun(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		benchmarkGeneratedName = GeneratePascalCaseAdjNoun("big", "cloud", 9)
+		benchmarkGeneratedName = FormatPascalCaseAdjNoun("big", "cloud", 9)
 	}
 }
 
-func BenchmarkGenerateHyphenedAdjNoun(b *testing.B) {
+func BenchmarkFormatHyphenedAdjNoun(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		benchmarkGeneratedName = GenerateHyphenedAdjNoun("big", "cloud", 9)
+		benchmarkGeneratedName = FormatHyphenedAdjNoun("big", "cloud", 9)
 	}
 }
