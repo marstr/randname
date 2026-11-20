@@ -35,7 +35,7 @@ func TestAdjNoun_Generate(t *testing.T) {
 
 			result := subject.Generate()
 			if !tc.Expected.MatchString(result) {
-				t.Fail()
+				t.Errorf("%q didn't match expected pattern %q", result, tc.Expected)
 			}
 		})
 	}

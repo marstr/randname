@@ -24,11 +24,14 @@ type AdjNoun struct {
 	RandGenerator io.Reader
 }
 
+var defaultFormat AdjNounFormat = FormatPascalCaseAdjNoun
+var defaultRandGenerator io.Reader = rand.Reader
+
 // NewAdjNoun creates a new instance of AdjNoun that is populated with all of the defaults.
 func NewAdjNoun() *AdjNoun {
 	return &AdjNoun{
-		RandGenerator: rand.Reader,
-		Format:        FormatPascalCaseAdjNoun,
+		RandGenerator: defaultRandGenerator,
+		Format:        defaultFormat,
 	}
 }
 
@@ -60,17 +63,50 @@ var defaultNouns string
 var getDefaultAdjectives = defaultBuilder(&defaultAdjectives)
 var getDefaultNouns = defaultBuilder(&defaultNouns)
 
-// generate fetches a random name of the default format and strategy.
+// Generate fetches a random name of the default dictionary and format.
 func Generate() string {
 	return AdjNoun{}.Generate()
+}
+
+// GeneratePascalCase fetches a random name using the default dictionary, formatted like: BigCloud9
+func GeneratePascalCase() string {
+	return AdjNoun{}.GeneratePascalCase()
+}
+
+// GenerateCamelCase fetches a random name using the default dictionary, formatted like: bigCloud9
+func GenerateCamelCase() string {
+	return AdjNoun{}.GenerateCamelCase()
+}
+
+// GenerateHyphened fetches a random name using the default dictionary, formatted like: big-cloud-9
+func GenerateHyphened() string {
+	return AdjNoun{}.GenerateHyphened()
 }
 
 // Generate creates a new randomly generated name with the
 func (adNoun AdjNoun) Generate() string {
 	if adNoun.Format == nil {
-		adNoun.Format = FormatPascalCaseAdjNoun
+		adNoun.Format = defaultFormat
 	}
 	return adNoun.Format(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
+}
+
+// GeneratePascalCase randomly generates an adjective, noun, and number then returns them
+// as a string formatted like: BigCloud9
+func (adNoun AdjNoun) GeneratePascalCase() string {
+	return FormatPascalCaseAdjNoun(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
+}
+
+// GenerateCamelCase randomly generates an adjective, noun, and number combination using the provided
+// dictionaries, then returns them as a string formatted like: bigCloud9
+func (adNoun AdjNoun) GenerateCamelCase() string {
+	return FormatCamelCaseAdjNoun(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
+}
+
+// GenerateHyphened randomly generates an adjective, noun, and number combination using the provided
+// dictionaries, then returns them as a string formatted like: big-cloud-9
+func (adNoun AdjNoun) GenerateHyphened() string {
+	return FormatHyphenedAdjNoun(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
 }
 
 func (adNoun AdjNoun) getAdjective() string {
@@ -79,7 +115,7 @@ func (adNoun AdjNoun) getAdjective() string {
 	}
 	if collection.Any(adNoun.Adjectives) {
 		if adNoun.RandGenerator == nil {
-			adNoun.RandGenerator = rand.Reader
+			adNoun.RandGenerator = defaultRandGenerator
 		}
 		randomLocation, _ := rand.Int(adNoun.RandGenerator, big.NewInt(adNoun.Adjectives.Size()))
 		return collection.ElementAt(adNoun.Adjectives, uint(randomLocation.Uint64())).(string)
@@ -93,7 +129,7 @@ func (adNoun AdjNoun) getNoun() string {
 	}
 	if collection.Any(adNoun.Nouns) {
 		if adNoun.RandGenerator == nil {
-			adNoun.RandGenerator = rand.Reader
+			adNoun.RandGenerator = defaultRandGenerator
 		}
 		position, _ := rand.Int(adNoun.RandGenerator, big.NewInt(adNoun.Nouns.Size()))
 		return collection.ElementAt(adNoun.Nouns, uint(position.Uint64())).(string)
@@ -103,7 +139,7 @@ func (adNoun AdjNoun) getNoun() string {
 
 func (adNoun AdjNoun) getDigit() int {
 	if adNoun.RandGenerator == nil {
-		adNoun.RandGenerator = rand.Reader
+		adNoun.RandGenerator = defaultRandGenerator
 	}
 	result, _ := rand.Int(adNoun.RandGenerator, big.NewInt(100))
 	return int(result.Int64())
