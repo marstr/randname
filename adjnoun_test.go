@@ -5,6 +5,7 @@ package randname
 
 import (
 	"bufio"
+	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,122 @@ import (
 
 var pascalForm = regexp.MustCompile(`^[A-Z][a-z]+[A-Z][a-z]+\d{2}$`)
 var camelForm = regexp.MustCompile(`^[a-z]+[A-Z][a-z]+\d{2}$`)
+var hyphenedForm = regexp.MustCompile(`^[a-z]+-[a-z]+-\d{2}$`)
+
+func TestGenerateNamedFormats(t *testing.T) {
+	tests := []struct {
+		name     string
+		generate func() string
+		want     *regexp.Regexp
+	}{
+		{"pascal", GeneratePascalCase, pascalForm},
+		{"camel", GenerateCamelCase, camelForm},
+		{"hyphened", GenerateHyphened, hyphenedForm},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.generate(); !tt.want.MatchString(got) {
+				t.Errorf("%q didn't match expected pattern %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAdjNoun_GenerateNamedFormats(t *testing.T) {
+	adjectives := &collection.Dictionary{}
+	adjectives.Add("bIG")
+	nouns := &collection.Dictionary{}
+	nouns.Add("cLOUD")
+
+	methods := []struct {
+		name     string
+		generate func(AdjNoun) string
+		prefix   string
+	}{
+		{"pascal", AdjNoun.GeneratePascalCase, "BigCloud"},
+		{"camel", AdjNoun.GenerateCamelCase, "bigCloud"},
+		{"hyphened", AdjNoun.GenerateHyphened, "big-cloud-"},
+	}
+	digits := []struct {
+		value byte
+		want  string
+	}{
+		{0, "00"},
+		{9, "09"},
+		{99, "99"},
+	}
+
+	for _, method := range methods {
+		t.Run(method.name, func(t *testing.T) {
+			for _, configured := range []bool{false, true} {
+				name := "default_formatter"
+				if configured {
+					name = "custom_formatter"
+				}
+				t.Run(name, func(t *testing.T) {
+					for _, digit := range digits {
+						t.Run(digit.want, func(t *testing.T) {
+							generator := AdjNoun{
+								Adjectives:    adjectives,
+								Nouns:         nouns,
+								RandGenerator: bytes.NewReader(bytes.Repeat([]byte{digit.value}, 16)),
+							}
+							if configured {
+								generator.Format = func(string, string, int) string {
+									t.Fatal("named generation method called the configured formatter")
+									return ""
+								}
+							}
+							if got, want := method.generate(generator), method.prefix+digit.want; got != want {
+								t.Errorf("got %q, want %q", got, want)
+							}
+						})
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestAdjNoun_GenerateNamedFormatsOverrideFormat(t *testing.T) {
+	adjectives := &collection.Dictionary{}
+	adjectives.Add("big")
+	nouns := &collection.Dictionary{}
+	nouns.Add("cloud")
+
+	tests := []struct {
+		name     string
+		generate func(AdjNoun) string
+		want     string
+	}{
+		{"pascal", AdjNoun.GeneratePascalCase, "BigCloud09"},
+		{"camel", AdjNoun.GenerateCamelCase, "bigCloud09"},
+		{"hyphened", AdjNoun.GenerateHyphened, "big-cloud-09"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			generator := AdjNoun{
+				Adjectives: adjectives,
+				Nouns:      nouns,
+				Format: func(string, string, int) string {
+					return "my-custom-format"
+				},
+				RandGenerator: bytes.NewReader(bytes.Repeat([]byte{9}, 48)),
+			}
+			if got := generator.Generate(); got != "my-custom-format" {
+				t.Fatalf("Generate() = %q, want custom format", got)
+			}
+			if got := tt.generate(generator); got != tt.want {
+				t.Errorf("named method = %q, want %q", got, tt.want)
+			}
+			if got := generator.Generate(); got != "my-custom-format" {
+				t.Errorf("Generate() after named method = %q, want custom format", got)
+			}
+		})
+	}
+}
 
 func TestAdjNoun_Generate(t *testing.T) {
 	testCases := []struct {
