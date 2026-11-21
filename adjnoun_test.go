@@ -6,12 +6,17 @@ package randname
 import (
 	"bufio"
 	"bytes"
+	"context"
+	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"testing"
+	"testing/iotest"
 
 	"github.com/marstr/collection/v2"
 )
@@ -19,6 +24,134 @@ import (
 var pascalForm = regexp.MustCompile(`^[A-Z][a-z]+[A-Z][a-z]+\d{2}$`)
 var camelForm = regexp.MustCompile(`^[a-z]+[A-Z][a-z]+\d{2}$`)
 var hyphenedForm = regexp.MustCompile(`^[a-z]+-[a-z]+-\d{2}$`)
+
+func TestNewAdjNounFromReaders(t *testing.T) {
+	tests := []struct {
+		name       string
+		adjectives string
+		nouns      string
+		wantAdj    []string
+		wantNouns  []string
+	}{
+		{"words", "big\nsmall\nbig\n", "cloud\nriver", []string{"big", "small"}, []string{"cloud", "river"}},
+		{"empty", "", "", nil, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			generator, err := NewAdjNounFromReaders(context.Background(), strings.NewReader(tt.adjectives), strings.NewReader(tt.nouns))
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, dict := range []struct {
+				name string
+				got  *collection.Dictionary
+				want []string
+			}{
+				{"adjectives", generator.Adjectives, tt.wantAdj},
+				{"nouns", generator.Nouns, tt.wantNouns},
+			} {
+				if dict.got == nil {
+					t.Fatalf("%s dictionary is nil", dict.name)
+				}
+				if got := dict.got.Size(); got != int64(len(dict.want)) {
+					t.Errorf("%s size = %d, want %d", dict.name, got, len(dict.want))
+				}
+				for _, word := range dict.want {
+					if !dict.got.Contains(word) {
+						t.Errorf("%s missing %q", dict.name, word)
+					}
+				}
+			}
+			generator.RandGenerator = bytes.NewReader(make([]byte, 16))
+			want := "BigCloud00"
+			if tt.name == "empty" {
+				want = "00"
+			}
+			if got := generator.Generate(); got != want {
+				t.Errorf("Generate() = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestNewAdjNounFromReadersErrors(t *testing.T) {
+	want := errors.New("reader failed")
+	for _, name := range []string{"adjectives", "nouns"} {
+		t.Run(name, func(t *testing.T) {
+			var adjectives, nouns io.Reader = strings.NewReader("big\n"), strings.NewReader("cloud\n")
+			if name == "adjectives" {
+				adjectives = iotest.ErrReader(want)
+			} else {
+				nouns = iotest.ErrReader(want)
+			}
+			generator, err := NewAdjNounFromReaders(context.Background(), adjectives, nouns)
+			if !errors.Is(err, want) {
+				t.Errorf("error = %v, want %v", err, want)
+			}
+			if generator != nil {
+				t.Error("returned a generator on failure")
+			}
+		})
+	}
+}
+
+func TestNewAdjNounFromFilenames(t *testing.T) {
+	dir := t.TempDir()
+	adjectives := filepath.Join(dir, "adjectives.txt")
+	nouns := filepath.Join(dir, "nouns.txt")
+	for filename, contents := range map[string]string{adjectives: "big\n", nouns: "cloud\n"} {
+		if err := os.WriteFile(filename, []byte(contents), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	generator, err := NewAdjNounFromFilenames(context.Background(), adjectives, nouns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if generator.Adjectives == nil || generator.Nouns == nil ||
+		generator.Adjectives.Size() != 1 || !generator.Adjectives.Contains("big") ||
+		generator.Nouns.Size() != 1 || !generator.Nouns.Contains("cloud") {
+		t.Fatal("file dictionaries were not populated correctly")
+	}
+	if got := generator.Generate(); !regexp.MustCompile(`^BigCloud\d{2}$`).MatchString(got) {
+		t.Errorf("unexpected generated name %q", got)
+	}
+	for _, filename := range []string{adjectives, nouns} {
+		if err := os.Remove(filename); err != nil {
+			t.Fatalf("constructor did not release %s: %v", filename, err)
+		}
+	}
+}
+
+func TestNewAdjNounFromFilenamesErrors(t *testing.T) {
+	dir := t.TempDir()
+	existing := filepath.Join(dir, "words.txt")
+	missing := filepath.Join(dir, "missing.txt")
+	if err := os.WriteFile(existing, []byte("word\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		name       string
+		adjectives string
+		nouns      string
+	}{
+		{"adjectives", missing, existing},
+		{"nouns", existing, missing},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			generator, err := NewAdjNounFromFilenames(context.Background(), tt.adjectives, tt.nouns)
+			if !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("error = %v, want file-not-found error", err)
+			}
+			if generator != nil {
+				t.Error("returned a generator on failure")
+			}
+		})
+	}
+	if err := os.Remove(existing); err != nil {
+		t.Fatalf("constructor did not release the adjective file after failure: %v", err)
+	}
+}
 
 func TestGenerateNamedFormats(t *testing.T) {
 	tests := []struct {

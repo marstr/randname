@@ -2,11 +2,13 @@ package randname
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	_ "embed"
 	"fmt"
 	"io"
 	"math/big"
+	"os"
 	"strings"
 	"sync"
 
@@ -33,6 +35,43 @@ func NewAdjNoun() *AdjNoun {
 		RandGenerator: defaultRandGenerator,
 		Format:        defaultFormat,
 	}
+}
+
+// NewAdjNounFromReaders creates a new instance of AdjNoun that is populated with adjectives and nouns that are
+// read in from io.Readers that contain one word per line.
+func NewAdjNounFromReaders(ctx context.Context, adjectives, nouns io.Reader) (*AdjNoun, error) {
+	adjDict, err := collection.NewDictionaryFromReader(ctx, adjectives)
+	if err != nil {
+		return nil, err
+	}
+
+	nounDict, err := collection.NewDictionaryFromReader(ctx, nouns)
+	if err != nil {
+		return nil, err
+	}
+
+	result := NewAdjNoun()
+	result.Adjectives = adjDict
+	result.Nouns = nounDict
+	return result, nil
+}
+
+// NewAdjNounFromFilenames creates a new instance of AdjNoun that is populated with adjectives and nouns that are
+// read in from files that contain one word per line.
+func NewAdjNounFromFilenames(ctx context.Context, adjectives, nouns string) (*AdjNoun, error) {
+	adjFilehandle, err := os.Open(adjectives)
+	if err != nil {
+		return nil, err
+	}
+	defer adjFilehandle.Close()
+
+	nounFilehandle, err := os.Open(nouns)
+	if err != nil {
+		return nil, err
+	}
+	defer nounFilehandle.Close()
+
+	return NewAdjNounFromReaders(ctx, adjFilehandle, nounFilehandle)
 }
 
 func defaultBuilder(words *string) func() *collection.Dictionary {
