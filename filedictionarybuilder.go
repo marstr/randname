@@ -9,6 +9,8 @@ import (
 )
 
 // FileDictionaryBuilder read words from a file.
+//
+// Deprecated: Populate a collection.Dictionary directly instead.
 type FileDictionaryBuilder struct {
 	Target string
 }
