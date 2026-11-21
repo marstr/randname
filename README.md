@@ -1,9 +1,9 @@
 # randname
-[![Build Status](https://github.com/marstr/randname/actions/workflows/ci.yml/badge.svg)](https://github.com/marstr/randname/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/marstr/randname.svg)](https://pkg.go.dev/github.com/marstr/randname) [![Build Status](https://github.com/marstr/randname/actions/workflows/ci.yml/badge.svg)](https://github.com/marstr/randname/actions/workflows/ci.yml)
 
 A Go package which creates random names with an emphasis on flexibility and ease of use.
 
-The default dictionaries are embedded at build time and do not need to be distributed separately. Go 1.16 or later is required.
+The default dictionaries are embedded at build time and do not need to be distributed separately. Go 1.18 or later is required.
 
 # Contributing
 

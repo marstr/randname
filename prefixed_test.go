@@ -98,3 +98,19 @@ func TestPrefixed_Generate(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateWithPrefix(t *testing.T) {
+	const prefix = "randname-"
+	for _, tc := range []struct {
+		characters uint8
+		want       int
+	}{
+		{0, 6},
+		{1, 1},
+	} {
+		got := randname.GenerateWithPrefix(prefix, tc.characters)
+		if !strings.HasPrefix(got, prefix) || len(strings.TrimPrefix(got, prefix)) != tc.want {
+			t.Errorf("GenerateWithPrefix(%q, %d) = %q; want prefix followed by %d characters", prefix, tc.characters, got, tc.want)
+		}
+	}
+}

@@ -5,18 +5,268 @@ package randname
 
 import (
 	"bufio"
+	"bytes"
+	"context"
+	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"testing"
+	"testing/iotest"
 
-	"github.com/marstr/collection"
+	"github.com/marstr/collection/v2"
 )
 
 var pascalForm = regexp.MustCompile(`^[A-Z][a-z]+[A-Z][a-z]+\d{2}$`)
 var camelForm = regexp.MustCompile(`^[a-z]+[A-Z][a-z]+\d{2}$`)
+var hyphenedForm = regexp.MustCompile(`^[a-z]+-[a-z]+-\d{2}$`)
+
+func TestNewAdjNounFromReaders(t *testing.T) {
+	tests := []struct {
+		name       string
+		adjectives string
+		nouns      string
+		wantAdj    []string
+		wantNouns  []string
+	}{
+		{"words", "big\nsmall\nbig\n", "cloud\nriver", []string{"big", "small"}, []string{"cloud", "river"}},
+		{"empty", "", "", nil, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			generator, err := NewAdjNounFromReaders(context.Background(), strings.NewReader(tt.adjectives), strings.NewReader(tt.nouns))
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, dict := range []struct {
+				name string
+				got  *collection.Dictionary
+				want []string
+			}{
+				{"adjectives", generator.Adjectives, tt.wantAdj},
+				{"nouns", generator.Nouns, tt.wantNouns},
+			} {
+				if dict.got == nil {
+					t.Fatalf("%s dictionary is nil", dict.name)
+				}
+				if got := dict.got.Size(); got != int64(len(dict.want)) {
+					t.Errorf("%s size = %d, want %d", dict.name, got, len(dict.want))
+				}
+				for _, word := range dict.want {
+					if !dict.got.Contains(word) {
+						t.Errorf("%s missing %q", dict.name, word)
+					}
+				}
+			}
+			generator.RandGenerator = bytes.NewReader(make([]byte, 16))
+			want := "BigCloud00"
+			if tt.name == "empty" {
+				want = "00"
+			}
+			if got := generator.Generate(); got != want {
+				t.Errorf("Generate() = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestNewAdjNounFromReadersErrors(t *testing.T) {
+	want := errors.New("reader failed")
+	for _, name := range []string{"adjectives", "nouns"} {
+		t.Run(name, func(t *testing.T) {
+			var adjectives, nouns io.Reader = strings.NewReader("big\n"), strings.NewReader("cloud\n")
+			if name == "adjectives" {
+				adjectives = iotest.ErrReader(want)
+			} else {
+				nouns = iotest.ErrReader(want)
+			}
+			generator, err := NewAdjNounFromReaders(context.Background(), adjectives, nouns)
+			if !errors.Is(err, want) {
+				t.Errorf("error = %v, want %v", err, want)
+			}
+			if generator != nil {
+				t.Error("returned a generator on failure")
+			}
+		})
+	}
+}
+
+func TestNewAdjNounFromFilenames(t *testing.T) {
+	dir := t.TempDir()
+	adjectives := filepath.Join(dir, "adjectives.txt")
+	nouns := filepath.Join(dir, "nouns.txt")
+	for filename, contents := range map[string]string{adjectives: "big\n", nouns: "cloud\n"} {
+		if err := os.WriteFile(filename, []byte(contents), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	generator, err := NewAdjNounFromFilenames(context.Background(), adjectives, nouns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if generator.Adjectives == nil || generator.Nouns == nil ||
+		generator.Adjectives.Size() != 1 || !generator.Adjectives.Contains("big") ||
+		generator.Nouns.Size() != 1 || !generator.Nouns.Contains("cloud") {
+		t.Fatal("file dictionaries were not populated correctly")
+	}
+	if got := generator.Generate(); !regexp.MustCompile(`^BigCloud\d{2}$`).MatchString(got) {
+		t.Errorf("unexpected generated name %q", got)
+	}
+	for _, filename := range []string{adjectives, nouns} {
+		if err := os.Remove(filename); err != nil {
+			t.Fatalf("constructor did not release %s: %v", filename, err)
+		}
+	}
+}
+
+func TestNewAdjNounFromFilenamesErrors(t *testing.T) {
+	dir := t.TempDir()
+	existing := filepath.Join(dir, "words.txt")
+	missing := filepath.Join(dir, "missing.txt")
+	if err := os.WriteFile(existing, []byte("word\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		name       string
+		adjectives string
+		nouns      string
+	}{
+		{"adjectives", missing, existing},
+		{"nouns", existing, missing},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			generator, err := NewAdjNounFromFilenames(context.Background(), tt.adjectives, tt.nouns)
+			if !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("error = %v, want file-not-found error", err)
+			}
+			if generator != nil {
+				t.Error("returned a generator on failure")
+			}
+		})
+	}
+	if err := os.Remove(existing); err != nil {
+		t.Fatalf("constructor did not release the adjective file after failure: %v", err)
+	}
+}
+
+func TestGenerateNamedFormats(t *testing.T) {
+	tests := []struct {
+		name     string
+		generate func() string
+		want     *regexp.Regexp
+	}{
+		{"pascal", GeneratePascalCase, pascalForm},
+		{"camel", GenerateCamelCase, camelForm},
+		{"hyphened", GenerateHyphened, hyphenedForm},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.generate(); !tt.want.MatchString(got) {
+				t.Errorf("%q didn't match expected pattern %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAdjNoun_GenerateNamedFormats(t *testing.T) {
+	adjectives := &collection.Dictionary{}
+	adjectives.Add("bIG")
+	nouns := &collection.Dictionary{}
+	nouns.Add("cLOUD")
+
+	methods := []struct {
+		name     string
+		generate func(AdjNoun) string
+		prefix   string
+	}{
+		{"pascal", AdjNoun.GeneratePascalCase, "BigCloud"},
+		{"camel", AdjNoun.GenerateCamelCase, "bigCloud"},
+		{"hyphened", AdjNoun.GenerateHyphened, "big-cloud-"},
+	}
+	digits := []struct {
+		value byte
+		want  string
+	}{
+		{0, "00"},
+		{9, "09"},
+		{99, "99"},
+	}
+
+	for _, method := range methods {
+		t.Run(method.name, func(t *testing.T) {
+			for _, configured := range []bool{false, true} {
+				name := "default_formatter"
+				if configured {
+					name = "custom_formatter"
+				}
+				t.Run(name, func(t *testing.T) {
+					for _, digit := range digits {
+						t.Run(digit.want, func(t *testing.T) {
+							generator := AdjNoun{
+								Adjectives:    adjectives,
+								Nouns:         nouns,
+								RandGenerator: bytes.NewReader(bytes.Repeat([]byte{digit.value}, 16)),
+							}
+							if configured {
+								generator.Format = func(string, string, int) string {
+									t.Fatal("named generation method called the configured formatter")
+									return ""
+								}
+							}
+							if got, want := method.generate(generator), method.prefix+digit.want; got != want {
+								t.Errorf("got %q, want %q", got, want)
+							}
+						})
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestAdjNoun_GenerateNamedFormatsOverrideFormat(t *testing.T) {
+	adjectives := &collection.Dictionary{}
+	adjectives.Add("big")
+	nouns := &collection.Dictionary{}
+	nouns.Add("cloud")
+
+	tests := []struct {
+		name     string
+		generate func(AdjNoun) string
+		want     string
+	}{
+		{"pascal", AdjNoun.GeneratePascalCase, "BigCloud09"},
+		{"camel", AdjNoun.GenerateCamelCase, "bigCloud09"},
+		{"hyphened", AdjNoun.GenerateHyphened, "big-cloud-09"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			generator := AdjNoun{
+				Adjectives: adjectives,
+				Nouns:      nouns,
+				Format: func(string, string, int) string {
+					return "my-custom-format"
+				},
+				RandGenerator: bytes.NewReader(bytes.Repeat([]byte{9}, 48)),
+			}
+			if got := generator.Generate(); got != "my-custom-format" {
+				t.Fatalf("Generate() = %q, want custom format", got)
+			}
+			if got := tt.generate(generator); got != tt.want {
+				t.Errorf("named method = %q, want %q", got, tt.want)
+			}
+			if got := generator.Generate(); got != "my-custom-format" {
+				t.Errorf("Generate() after named method = %q, want custom format", got)
+			}
+		})
+	}
+}
 
 func TestAdjNoun_Generate(t *testing.T) {
 	testCases := []struct {
@@ -35,7 +285,7 @@ func TestAdjNoun_Generate(t *testing.T) {
 
 			result := subject.Generate()
 			if !tc.Expected.MatchString(result) {
-				t.Fail()
+				t.Errorf("%q didn't match expected pattern %q", result, tc.Expected)
 			}
 		})
 	}
@@ -146,9 +396,9 @@ func TestGenerateAdjNounFormats(t *testing.T) {
 		{"lowercase", "big", "cloud", 9, "BigCloud09", "bigCloud09", "big-cloud-09"},
 		{"mixed_case", "bIG", "cLOUD", 42, "BigCloud42", "bigCloud42", "big-cloud-42"},
 		{"single_letters", "B", "C", 0, "BC00", "bC00", "b-c-00"},
-		{"empty_adjective", "", "cloud", 9, "Cloud09", "cloud09", "--09"},
-		{"empty_noun", "big", "", 9, "Big09", "big09", "big--09"},
-		{"empty_words", "", "", 9, "09", "09", "--09"},
+		{"empty_adjective", "", "cloud", 9, "Cloud09", "cloud09", "cloud-09"},
+		{"empty_noun", "big", "", 9, "Big09", "big09", "big-09"},
+		{"empty_words", "", "", 9, "09", "09", "09"},
 		{"negative_digit", "big", "cloud", -1, "BigCloud-1", "bigCloud-1", "big-cloud--1"},
 		{"wide_digit", "big", "cloud", 123, "BigCloud123", "bigCloud123", "big-cloud-123"},
 	}

@@ -2,16 +2,18 @@ package randname
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	_ "embed"
 	"fmt"
 	"io"
 	"math/big"
+	"os"
 	"strings"
 	"sync"
 	"unicode"
 
-	"github.com/marstr/collection"
+	"github.com/marstr/collection/v2"
 )
 
 // AdjNounFormat is a type of function that aggregates an Adjective, Noun, and Digit into a single formatted string.
@@ -25,12 +27,52 @@ type AdjNoun struct {
 	RandGenerator io.Reader
 }
 
+var defaultFormat AdjNounFormat = FormatPascalCaseAdjNoun
+var defaultRandGenerator io.Reader = rand.Reader
+
 // NewAdjNoun creates a new instance of AdjNoun that is populated with all of the defaults.
 func NewAdjNoun() *AdjNoun {
 	return &AdjNoun{
-		RandGenerator: rand.Reader,
-		Format:        FormatPascalCaseAdjNoun,
+		RandGenerator: defaultRandGenerator,
+		Format:        defaultFormat,
 	}
+}
+
+// NewAdjNounFromReaders creates a new instance of AdjNoun that is populated with adjectives and nouns that are
+// read in from io.Readers that contain one word per line.
+func NewAdjNounFromReaders(ctx context.Context, adjectives, nouns io.Reader) (*AdjNoun, error) {
+	adjDict, err := collection.NewDictionaryFromReader(ctx, adjectives)
+	if err != nil {
+		return nil, err
+	}
+
+	nounDict, err := collection.NewDictionaryFromReader(ctx, nouns)
+	if err != nil {
+		return nil, err
+	}
+
+	result := NewAdjNoun()
+	result.Adjectives = adjDict
+	result.Nouns = nounDict
+	return result, nil
+}
+
+// NewAdjNounFromFilenames creates a new instance of AdjNoun that is populated with adjectives and nouns that are
+// read in from files that contain one word per line.
+func NewAdjNounFromFilenames(ctx context.Context, adjectives, nouns string) (*AdjNoun, error) {
+	adjFilehandle, err := os.Open(adjectives)
+	if err != nil {
+		return nil, err
+	}
+	defer adjFilehandle.Close()
+
+	nounFilehandle, err := os.Open(nouns)
+	if err != nil {
+		return nil, err
+	}
+	defer nounFilehandle.Close()
+
+	return NewAdjNounFromReaders(ctx, adjFilehandle, nounFilehandle)
 }
 
 func defaultBuilder(words *string) func() *collection.Dictionary {
@@ -61,29 +103,62 @@ var defaultNouns string
 var getDefaultAdjectives = defaultBuilder(&defaultAdjectives)
 var getDefaultNouns = defaultBuilder(&defaultNouns)
 
-// generate fetches a random name of the default format and strategy.
+// Generate fetches a random name of the default dictionary and format.
 func Generate() string {
 	return AdjNoun{}.Generate()
+}
+
+// GeneratePascalCase fetches a random name using the default dictionary, formatted like: BigCloud9
+func GeneratePascalCase() string {
+	return AdjNoun{}.GeneratePascalCase()
+}
+
+// GenerateCamelCase fetches a random name using the default dictionary, formatted like: bigCloud9
+func GenerateCamelCase() string {
+	return AdjNoun{}.GenerateCamelCase()
+}
+
+// GenerateHyphened fetches a random name using the default dictionary, formatted like: big-cloud-9
+func GenerateHyphened() string {
+	return AdjNoun{}.GenerateHyphened()
 }
 
 // Generate creates a new randomly generated name with the
 func (adNoun AdjNoun) Generate() string {
 	if adNoun.Format == nil {
-		adNoun.Format = FormatPascalCaseAdjNoun
+		adNoun.Format = defaultFormat
 	}
 	return adNoun.Format(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
+}
+
+// GeneratePascalCase randomly generates an adjective, noun, and number then returns them
+// as a string formatted like: BigCloud9
+func (adNoun AdjNoun) GeneratePascalCase() string {
+	return FormatPascalCaseAdjNoun(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
+}
+
+// GenerateCamelCase randomly generates an adjective, noun, and number combination using the provided
+// dictionaries, then returns them as a string formatted like: bigCloud9
+func (adNoun AdjNoun) GenerateCamelCase() string {
+	return FormatCamelCaseAdjNoun(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
+}
+
+// GenerateHyphened randomly generates an adjective, noun, and number combination using the provided
+// dictionaries, then returns them as a string formatted like: big-cloud-9
+func (adNoun AdjNoun) GenerateHyphened() string {
+	return FormatHyphenedAdjNoun(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
 }
 
 func (adNoun AdjNoun) getAdjective() string {
 	if adNoun.Adjectives == nil {
 		adNoun.Adjectives = getDefaultAdjectives()
 	}
-	if collection.Any(adNoun.Adjectives) {
+	if collection.Any[string](adNoun.Adjectives) {
 		if adNoun.RandGenerator == nil {
-			adNoun.RandGenerator = rand.Reader
+			adNoun.RandGenerator = defaultRandGenerator
 		}
 		randomLocation, _ := rand.Int(adNoun.RandGenerator, big.NewInt(adNoun.Adjectives.Size()))
-		return collection.ElementAt(adNoun.Adjectives, uint(randomLocation.Uint64())).(string)
+		return collection.ElementAt[string](adNoun.Adjectives, uint(randomLocation.Uint64()))
 	}
 	return ""
 }
@@ -92,19 +167,19 @@ func (adNoun AdjNoun) getNoun() string {
 	if adNoun.Nouns == nil {
 		adNoun.Nouns = getDefaultNouns()
 	}
-	if collection.Any(adNoun.Nouns) {
+	if collection.Any[string](adNoun.Nouns) {
 		if adNoun.RandGenerator == nil {
-			adNoun.RandGenerator = rand.Reader
+			adNoun.RandGenerator = defaultRandGenerator
 		}
 		position, _ := rand.Int(adNoun.RandGenerator, big.NewInt(adNoun.Nouns.Size()))
-		return collection.ElementAt(adNoun.Nouns, uint(position.Uint64())).(string)
+		return collection.ElementAt[string](adNoun.Nouns, uint(position.Uint64()))
 	}
 	return ""
 }
 
 func (adNoun AdjNoun) getDigit() int {
 	if adNoun.RandGenerator == nil {
-		adNoun.RandGenerator = rand.Reader
+		adNoun.RandGenerator = defaultRandGenerator
 	}
 	result, _ := rand.Int(adNoun.RandGenerator, big.NewInt(100))
 	return int(result.Int64())
@@ -139,12 +214,12 @@ func FormatHyphenedAdjNoun(adjective, noun string, digit int) string {
 	builder := bytes.Buffer{}
 	if len(adjective) > 0 {
 		builder.WriteString(strings.ToLower(adjective))
+		builder.WriteRune('-')
 	}
-	builder.WriteRune('-')
-	if len(adjective) > 0 {
+	if len(noun) > 0 {
 		builder.WriteString(strings.ToLower(noun))
+		builder.WriteRune('-')
 	}
-	builder.WriteRune('-')
 	builder.WriteString(fmt.Sprintf("%02d", digit))
 
 	return builder.String()
