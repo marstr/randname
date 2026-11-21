@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/marstr/collection"
 )
@@ -155,16 +156,16 @@ func FormatCamelCaseAdjNoun(adjective, noun string, digit int) string {
 func FormatPascalCaseAdjNoun(adjective, noun string, digit int) string {
 	builder := bytes.Buffer{}
 	if len(adjective) > 0 {
-		builder.WriteString(strings.ToUpper(adjective[:1]))
+		builder.WriteRune(unicode.ToUpper(rune(adjective[0])))
 		builder.WriteString(strings.ToLower(adjective[1:]))
 	}
 
 	if len(noun) > 0 {
-		builder.WriteString(strings.ToUpper(noun[:1]))
+		builder.WriteRune(unicode.ToUpper(rune(noun[0])))
 		builder.WriteString(strings.ToLower(noun[1:]))
 	}
 
-	builder.WriteString(fmt.Sprintf("%02d", digit))
+	fmt.Fprintf(&builder, "%02d", digit)
 
 	return builder.String()
 }
