@@ -47,6 +47,21 @@ fmt.Println(randname.GenerateHyphened())   // e.g. big-cloud-09
 
 Each call generates a new random name; the comments illustrate the formats, not fixed output.
 
+### Configure a generator
+
+The zero value of `AdjNoun` is ready to use. Nil `Adjectives` and `Nouns` use the embedded dictionaries, nil `RandGenerator` uses `crypto/rand.Reader`, and nil `Format` uses PascalCase. A non-nil empty dictionary omits that word.
+
+```go
+generator := randname.AdjNoun{Format: randname.FormatHyphenedAdjNoun}
+fmt.Println(generator.Generate())          // e.g. big-cloud-09
+fmt.Println(generator.GenerateCamelCase()) // e.g. bigCloud09
+fmt.Println(generator.Generate())          // still hyphened, e.g. small-river-42
+```
+
+The named formatting methods ignore `Format` for that call without changing it. A custom `AdjNounFormat` receives an adjective, noun, and integer from 0 to 99; it controls the output, including number padding.
+
+For custom dictionaries, `NewAdjNounFromReaders` and `NewAdjNounFromFilenames` accept one word per line and return a generator and an error. Both use the default formatting and randomness.
+
 ### Use a prefix
 
 For a name with your own prefix and a random alphanumeric suffix:
