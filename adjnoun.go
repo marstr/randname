@@ -39,8 +39,7 @@ var defaultRandGenerator io.Reader = rand.Reader
 // NewAdjNoun returns a generator using PascalCase formatting and crypto/rand.Reader.
 // Its dictionary fields are nil, so generation uses the embedded defaults.
 //
-// Deprecated: Use the zero value instead, such as var generator AdjNoun,
-// or new(AdjNoun) when a pointer is needed.
+// Deprecated: Use the zero value instead, such as var generator AdjNoun.
 func NewAdjNoun() *AdjNoun {
 	return &AdjNoun{
 		RandGenerator: defaultRandGenerator,

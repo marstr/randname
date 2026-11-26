@@ -56,7 +56,7 @@ var generator randname.AdjNoun
 fmt.Println(generator.Generate()) // e.g. BigCloud09
 ```
 
-`NewAdjNoun()` is deprecated; use zero-value initialization as above, or `new(randname.AdjNoun)` when you need a pointer. To customize the generator, set fields in a struct literal:
+To customize the generator, set fields in a struct literal:
 
 ```go
 generator := randname.AdjNoun{Format: randname.FormatHyphenedAdjNoun}
