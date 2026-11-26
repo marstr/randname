@@ -38,15 +38,6 @@ type AdjNoun struct {
 var defaultFormat AdjNounFormat = FormatPascalCaseAdjNoun
 var defaultRandGenerator io.Reader = rand.Reader
 
-// NewAdjNoun returns a generator using PascalCase formatting and crypto/rand.Reader.
-// Its dictionary fields are nil, so generation uses the embedded defaults.
-func NewAdjNoun() *AdjNoun {
-	return &AdjNoun{
-		RandGenerator: defaultRandGenerator,
-		Format:        defaultFormat,
-	}
-}
-
 // NewAdjNounFromReaders creates a new instance of AdjNoun that is populated with adjectives and nouns that are
 // read in from io.Readers that contain one word per line.
 // It uses PascalCase formatting and crypto/rand.Reader.
@@ -61,10 +52,12 @@ func NewAdjNounFromReaders(ctx context.Context, adjectives, nouns io.Reader) (*A
 		return nil, err
 	}
 
-	result := NewAdjNoun()
-	result.Adjectives = adjDict
-	result.Nouns = nounDict
-	return result, nil
+	return &AdjNoun{
+		Adjectives:    adjDict,
+		Nouns:         nounDict,
+		RandGenerator: defaultRandGenerator,
+		Format:        defaultFormat,
+	}, nil
 }
 
 // NewAdjNounFromFilenames creates a new instance of AdjNoun that is populated with adjectives and nouns that are
