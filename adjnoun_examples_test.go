@@ -7,7 +7,7 @@ import (
 )
 
 func ExampleAdjNoun_Generate() {
-	generator := randname.NewAdjNoun()
+	var generator randname.AdjNoun
 	fmt.Println(generator.Generate())
 }
 
