@@ -16,21 +16,30 @@ import (
 	"github.com/marstr/collection/v2"
 )
 
-// AdjNounFormat is a type of function that aggregates an Adjective, Noun, and Digit into a single formatted string.
+// AdjNounFormat combines an adjective, noun, and number into a formatted name.
+// AdjNoun passes a number from 0 to 99, inclusive.
 type AdjNounFormat func(string, string, int) string
 
-// AdjNoun creates a random name of the form adjectiveNameDigit
+// AdjNoun generates a random adjective, noun, and number from 0 to 99, inclusive.
+// Its zero value is ready to use and generates PascalCase names like BigCloud09.
 type AdjNoun struct {
-	Adjectives    *collection.Dictionary
-	Format        AdjNounFormat
-	Nouns         *collection.Dictionary
+	// Adjectives supplies the adjective dictionary. Nil uses the embedded defaults;
+	// a non-nil empty dictionary omits the adjective.
+	Adjectives *collection.Dictionary
+	// Format controls Generate's output. Nil uses FormatPascalCaseAdjNoun.
+	Format AdjNounFormat
+	// Nouns supplies the noun dictionary. Nil uses the embedded defaults;
+	// a non-nil empty dictionary omits the noun.
+	Nouns *collection.Dictionary
+	// RandGenerator supplies randomness. Nil uses crypto/rand.Reader.
 	RandGenerator io.Reader
 }
 
 var defaultFormat AdjNounFormat = FormatPascalCaseAdjNoun
 var defaultRandGenerator io.Reader = rand.Reader
 
-// NewAdjNoun creates a new instance of AdjNoun that is populated with all of the defaults.
+// NewAdjNoun returns a generator using PascalCase formatting and crypto/rand.Reader.
+// Its dictionary fields are nil, so generation uses the embedded defaults.
 func NewAdjNoun() *AdjNoun {
 	return &AdjNoun{
 		RandGenerator: defaultRandGenerator,
@@ -40,6 +49,7 @@ func NewAdjNoun() *AdjNoun {
 
 // NewAdjNounFromReaders creates a new instance of AdjNoun that is populated with adjectives and nouns that are
 // read in from io.Readers that contain one word per line.
+// It uses PascalCase formatting and crypto/rand.Reader.
 func NewAdjNounFromReaders(ctx context.Context, adjectives, nouns io.Reader) (*AdjNoun, error) {
 	adjDict, err := collection.NewDictionaryFromReader(ctx, adjectives)
 	if err != nil {
@@ -59,6 +69,7 @@ func NewAdjNounFromReaders(ctx context.Context, adjectives, nouns io.Reader) (*A
 
 // NewAdjNounFromFilenames creates a new instance of AdjNoun that is populated with adjectives and nouns that are
 // read in from files that contain one word per line.
+// It uses PascalCase formatting and crypto/rand.Reader.
 func NewAdjNounFromFilenames(ctx context.Context, adjectives, nouns string) (*AdjNoun, error) {
 	adjFilehandle, err := os.Open(adjectives)
 	if err != nil {
@@ -103,27 +114,33 @@ var defaultNouns string
 var getDefaultAdjectives = defaultBuilder(&defaultAdjectives)
 var getDefaultNouns = defaultBuilder(&defaultNouns)
 
-// Generate fetches a random name of the default dictionary and format.
+// Generate returns a random name using the embedded dictionaries and PascalCase
+// formatting, like BigCloud09. The number ranges from 00 to 99, inclusive.
 func Generate() string {
 	return AdjNoun{}.Generate()
 }
 
-// GeneratePascalCase fetches a random name using the default dictionary, formatted like: BigCloud9
+// GeneratePascalCase returns a random name using the embedded dictionaries,
+// formatted like BigCloud09, with a number from 00 to 99, inclusive.
 func GeneratePascalCase() string {
 	return AdjNoun{}.GeneratePascalCase()
 }
 
-// GenerateCamelCase fetches a random name using the default dictionary, formatted like: bigCloud9
+// GenerateCamelCase returns a random name using the embedded dictionaries,
+// formatted like bigCloud09, with a number from 00 to 99, inclusive.
 func GenerateCamelCase() string {
 	return AdjNoun{}.GenerateCamelCase()
 }
 
-// GenerateHyphened fetches a random name using the default dictionary, formatted like: big-cloud-9
+// GenerateHyphened returns a random name using the embedded dictionaries,
+// formatted like big-cloud-09, with a number from 00 to 99, inclusive.
 func GenerateHyphened() string {
 	return AdjNoun{}.GenerateHyphened()
 }
 
-// Generate creates a new randomly generated name with the
+// Generate returns a random name using the generator's dictionaries, randomness,
+// and Format. A nil Format uses PascalCase, like BigCloud09.
+// The number passed to Format ranges from 0 to 99, inclusive.
 func (adNoun AdjNoun) Generate() string {
 	if adNoun.Format == nil {
 		adNoun.Format = defaultFormat
@@ -131,20 +148,23 @@ func (adNoun AdjNoun) Generate() string {
 	return adNoun.Format(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
 }
 
-// GeneratePascalCase randomly generates an adjective, noun, and number then returns them
-// as a string formatted like: BigCloud9
+// GeneratePascalCase returns a random name using the generator's dictionaries
+// and randomness, formatted like BigCloud09, with a number from 00 to 99, inclusive.
+// It ignores Format without changing it.
 func (adNoun AdjNoun) GeneratePascalCase() string {
 	return FormatPascalCaseAdjNoun(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
 }
 
-// GenerateCamelCase randomly generates an adjective, noun, and number combination using the provided
-// dictionaries, then returns them as a string formatted like: bigCloud9
+// GenerateCamelCase returns a random name using the generator's dictionaries
+// and randomness, formatted like bigCloud09, with a number from 00 to 99, inclusive.
+// It ignores Format without changing it.
 func (adNoun AdjNoun) GenerateCamelCase() string {
 	return FormatCamelCaseAdjNoun(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
 }
 
-// GenerateHyphened randomly generates an adjective, noun, and number combination using the provided
-// dictionaries, then returns them as a string formatted like: big-cloud-9
+// GenerateHyphened returns a random name using the generator's dictionaries
+// and randomness, formatted like big-cloud-09, with a number from 00 to 99, inclusive.
+// It ignores Format without changing it.
 func (adNoun AdjNoun) GenerateHyphened() string {
 	return FormatHyphenedAdjNoun(adNoun.getAdjective(), adNoun.getNoun(), adNoun.getDigit())
 }
@@ -185,13 +205,15 @@ func (adNoun AdjNoun) getDigit() int {
 	return int(result.Int64())
 }
 
-// FormatCamelCaseAdjNoun formats an adjective, noun, and digit in the following way: bigCloud9
+// FormatCamelCaseAdjNoun formats an adjective, noun, and number like bigCloud09.
+// Nonnegative numbers are zero-padded to at least two decimal digits.
 func FormatCamelCaseAdjNoun(adjective, noun string, digit int) string {
 	pascal := FormatPascalCaseAdjNoun(adjective, noun, digit)
 	return strings.ToLower(pascal[:1]) + pascal[1:]
 }
 
-// FormatPascalCaseAdjNoun formats an adjective, noun, and digit in the following way: BigCloud9
+// FormatPascalCaseAdjNoun formats an adjective, noun, and number like BigCloud09.
+// Nonnegative numbers are zero-padded to at least two decimal digits.
 func FormatPascalCaseAdjNoun(adjective, noun string, digit int) string {
 	builder := bytes.Buffer{}
 	if len(adjective) > 0 {
@@ -209,7 +231,8 @@ func FormatPascalCaseAdjNoun(adjective, noun string, digit int) string {
 	return builder.String()
 }
 
-// FormatHyphenedAdjNoun formats an adjective, noun, and digit in the following way: big-cloud-9
+// FormatHyphenedAdjNoun formats an adjective, noun, and number like big-cloud-09.
+// Nonnegative numbers are zero-padded to at least two decimal digits.
 func FormatHyphenedAdjNoun(adjective, noun string, digit int) string {
 	builder := bytes.Buffer{}
 	if len(adjective) > 0 {
