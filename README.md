@@ -52,6 +52,13 @@ Each call generates a new random name; the comments illustrate the formats, not 
 The zero value of `AdjNoun` is ready to use. Nil `Adjectives` and `Nouns` use the embedded dictionaries, nil `RandGenerator` uses `crypto/rand.Reader`, and nil `Format` uses PascalCase. A non-nil empty dictionary omits that word.
 
 ```go
+var generator randname.AdjNoun
+fmt.Println(generator.Generate()) // e.g. BigCloud09
+```
+
+To customize the generator, set fields in a struct literal:
+
+```go
 generator := randname.AdjNoun{Format: randname.FormatHyphenedAdjNoun}
 fmt.Println(generator.Generate())          // e.g. big-cloud-09
 fmt.Println(generator.GenerateCamelCase()) // e.g. bigCloud09

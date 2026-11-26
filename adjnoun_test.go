@@ -140,11 +140,12 @@ func TestAdjNoun_Generate(t *testing.T) {
 		Format   AdjNounFormat
 		Expected *regexp.Regexp
 	}{
+		{nil, pascalForm},
 		{FormatCamelCaseAdjNoun, camelForm},
 		{FormatPascalCaseAdjNoun, pascalForm},
 	}
 
-	subject := AdjNoun{}
+	var subject AdjNoun
 
 	for _, tc := range testCases {
 		t.Run("", func(t *testing.T) {
